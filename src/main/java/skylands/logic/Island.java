@@ -3,7 +3,9 @@ package skylands.logic;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryEntryLookup;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.entry.RegistryEntryList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -18,12 +20,17 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.RandomSeed;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.biome.BiomeKeys;
+import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
+import net.minecraft.world.biome.source.MultiNoiseBiomeSourceParameterList;
+import net.minecraft.world.biome.source.MultiNoiseBiomeSourceParameterLists;
 import net.minecraft.world.dimension.DimensionTypes;
+import net.minecraft.world.gen.chunk.ChunkGeneratorSettings;
 import net.minecraft.world.gen.chunk.FlatChunkGenerator;
 import net.minecraft.world.gen.chunk.FlatChunkGeneratorConfig;
 import org.apache.commons.io.FileUtils;
 import skylands.SkylandsMod;
 import skylands.api.SkylandsAPI;
+import skylands.logic.generator.SkyBlockChunkGenerator;
 import skylands.util.SkylandsTexts;
 import xyz.nucleoid.fantasy.Fantasy;
 import xyz.nucleoid.fantasy.RuntimeWorldConfig;
@@ -180,7 +187,8 @@ public class Island {
 	}
 
 	public long getSeed() {
-		if (this.seed == 0) this.seed = RandomSeed.getSeed();
+		// We want to always have the same seed for Kilocraft
+//		if (this.seed == 0) this.seed = RandomSeed.getSeed();
 		return this.seed;
 	}
 
@@ -212,13 +220,14 @@ public class Island {
 	}
 
 	private RuntimeWorldConfig createIslandConfig() {
-		var biome = this.server.getRegistryManager().get(RegistryKeys.BIOME).getEntry(this.server.getRegistryManager().get(RegistryKeys.BIOME).getOrThrow(BiomeKeys.PLAINS));
-		FlatChunkGeneratorConfig flat = new FlatChunkGeneratorConfig(Optional.of(RegistryEntryList.of()), biome, List.of());
-		FlatChunkGenerator generator = new FlatChunkGenerator(flat);
+		RegistryEntryLookup.RegistryLookup registryLookup = this.server.getRegistryManager().createRegistryLookup();
+		RegistryEntry.Reference<MultiNoiseBiomeSourceParameterList> biomeSourceReference = registryLookup.getOrThrow(RegistryKeys.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST).getOrThrow(MultiNoiseBiomeSourceParameterLists.OVERWORLD);
+		RegistryEntry.Reference<ChunkGeneratorSettings> generatorSettingsReference = registryLookup.getOrThrow(RegistryKeys.CHUNK_GENERATOR_SETTINGS).getOrThrow(ChunkGeneratorSettings.OVERWORLD);
+		SkyBlockChunkGenerator chunkGenerator = new SkyBlockChunkGenerator(MultiNoiseBiomeSource.create(biomeSourceReference), generatorSettingsReference);
 
 		return new RuntimeWorldConfig()
 				.setDimensionType(DimensionTypes.OVERWORLD)
-				.setGenerator(generator)
+				.setGenerator(chunkGenerator)
 				.setDifficulty(Difficulty.NORMAL)
 				.setShouldTickTime(true)
 				.setSeed(this.getSeed());
@@ -255,13 +264,14 @@ public class Island {
 	}
 
 	private RuntimeWorldConfig createNetherConfig() {
-		var biome = this.server.getRegistryManager().get(RegistryKeys.BIOME).getEntry(this.server.getRegistryManager().get(RegistryKeys.BIOME).getOrThrow(BiomeKeys.NETHER_WASTES));
-		FlatChunkGeneratorConfig flat = new FlatChunkGeneratorConfig(Optional.of(RegistryEntryList.of()), biome, List.of());
-		FlatChunkGenerator generator = new FlatChunkGenerator(flat);
+		RegistryEntryLookup.RegistryLookup registryLookup = this.server.getRegistryManager().createRegistryLookup();
+		RegistryEntry.Reference<MultiNoiseBiomeSourceParameterList> biomeSourceReference = registryLookup.getOrThrow(RegistryKeys.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST).getOrThrow(MultiNoiseBiomeSourceParameterLists.NETHER);
+		RegistryEntry.Reference<ChunkGeneratorSettings> generatorSettingsReference = registryLookup.getOrThrow(RegistryKeys.CHUNK_GENERATOR_SETTINGS).getOrThrow(ChunkGeneratorSettings.NETHER);
+		SkyBlockChunkGenerator chunkGenerator = new SkyBlockChunkGenerator(MultiNoiseBiomeSource.create(biomeSourceReference), generatorSettingsReference);
 
 		return new RuntimeWorldConfig()
 				.setDimensionType(DimensionTypes.THE_NETHER)
-				.setGenerator(generator)
+				.setGenerator(chunkGenerator)
 				.setDifficulty(Difficulty.NORMAL)
 				.setShouldTickTime(true)
 				.setSeed(this.getSeed());

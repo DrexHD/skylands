@@ -41,7 +41,7 @@ public class DeleteCommand {
 				var now = Instant.now();
 				var seconds = ChronoUnit.SECONDS.between(created, now);
 
-				if(seconds >= Skylands.config.islandDeletionCooldown) {
+				if(seconds >= Skylands.config.islandDeletionCooldown || Permissions.check(player, "skylands.delete.bypass", 2)) {
 					islands.delete(player);
 					player.sendMessage(SkylandsTexts.prefixed("message.skylands.island_delete.success"));
 				}
@@ -64,9 +64,9 @@ public class DeleteCommand {
 		islands.get(player).ifPresentOrElse(island -> {
 			var created = island.created;
 			var now = Instant.now();
-			var hours = ChronoUnit.HOURS.between(created, now);
+			var seconds = ChronoUnit.SECONDS.between(created, now);
 
-			if(hours >= 24) {
+			if(seconds >= Skylands.config.islandDeletionCooldown || Permissions.check(player, "skylands.delete.bypass", 2)) {
 				player.sendMessage(SkylandsTexts.prefixed("message.skylands.island_delete.warning"));
 			}
 			else {
